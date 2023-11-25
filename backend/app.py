@@ -161,13 +161,173 @@ def create_event():
     db.commit()
     return {"message": "Event created!"}
 
-@app.route('/get_my_events', methods=['GET'])
+
+@app.route("/get_my_events", methods=["GET"])
 def get_my_events():
     user_id = get_current_user_id()
     if user_id is None:
-        return {'message': 'User not logged in'}
+        return {"message": "User not logged in"}
     db = get_db()
     cur = db.cursor()
-    cur.execute('SELECT * FROM events WHERE user_id = ?', (user_id,))
+    cur.execute("SELECT * FROM events WHERE user_id = ?", (user_id,))
     output = cur.fetchall()
-    return {'events': output}
+    return {"events": output}
+
+
+@app.route("/get_event", methods=["GET"])
+def get_event():
+    db = get_db()
+    cur = db.cursor()
+    event_id = request.args.get("event_id")
+    cur.execute("SELECT * FROM events WHERE id = ?", (event_id,))
+    output = cur.fetchone()
+    return {"event": output}
+
+
+@app.route("/reset_password", methods=["POST"])
+def reset_password():
+    """
+    This is for a user that is already logged in, and they are using their old and new password
+    to change the password.
+    """
+
+    user_id = get_current_user_id()
+    if user_id is None:
+        return {"message": "User not logged in"}
+
+    db = get_db()
+    cur = db.cursor()
+    data = request.get_json()
+    old_password = data["old_password"]
+    new_password = data["new_password"]
+    cur.execute("SELECT * FROM Users WHERE id = ?", (user_id,))
+    output = cur.fetchone()
+    if output is None:
+        return {"message": "User not found"}
+
+    if output[2] != old_password:
+        return {"message": "Old password incorrect"}
+
+    cur.execute("UPDATE Users SET password = ? WHERE id = ?", (new_password, user_id))
+    db.commit()
+
+    return {"message": "Password updated!"}
+
+
+@app.route("/rsvp_to_event", methods=["POST"])
+def rsvp_to_event():
+    user_id = get_current_user_id()
+    if user_id is None:
+        return {"message": "User not logged in"}
+    db = get_db()
+    cur = db.cursor()
+    data = request.get_json()
+    event_id = data["event_id"]
+    cur.execute(
+        "INSERT INTO rsvps (user_id, event_id) VALUES (?, ?)",
+        (user_id, event_id),
+    )
+    db.commit()
+    return {"message": "RSVP created!"}
+
+
+@app.route("/get_rsvps", methods=["GET"])
+def get_rsvps():
+    db = get_db()
+    cur = db.cursor()
+    event_id = request.args.get("event_id")
+    cur.execute("SELECT * FROM rsvps WHERE event_id = ?", (event_id,))
+    output = cur.fetchall()
+    return {"rsvps": output}
+
+
+@app.route("/add_food", methods=["POST"])
+def add_food():
+    user_id = get_current_user_id()
+    if user_id is None:
+        return {"message": "User not logged in"}
+    db = get_db()
+    cur = db.cursor()
+    data = request.get_json()
+    food_name = data["food_name"]
+    food_event = data["event_id"]
+    food_servings = data["servings"]
+    food_name = data["food_name"]
+
+    # make sure there is a valid rsvp for this user and event
+    cur.execute(
+        "SELECT * FROM rsvps WHERE user_id = ? AND event_id = ?", (user_id, food_event)
+    )
+    output = cur.fetchone()
+    if output is None:
+        return {"message": "User not RSVP'd to this event"}
+
+    cur.execute(
+        "INSERT INTO food (event_id, rsvp_id, food_name, servings) VALUES (?, ?, ?, ?)",
+        (food_event, output[0], food_name, food_servings),
+    )
+    db.commit()
+
+    return {"message": "Food created!"}
+
+
+@app.route("/get_foods_for_event", methods=["GET"])
+def get_foods_for_event():
+    db = get_db()
+    cur = db.cursor()
+    event_id = request.args.get("event_id")
+    cur.execute("SELECT * FROM food WHERE event_id = ?", (event_id,))
+    output = cur.fetchall()
+    return {"foods": output}
+
+
+@app.route("/owner_remove_food_from_event", methods=["POST"])
+def owner_remove_food_from_event():
+    user_id = get_current_user_id()
+    if user_id is None:
+        return {"message": "User not logged in"}
+    db = get_db()
+    cur = db.cursor()
+    data = request.get_json()
+
+    food_id = data["food_id"]
+    event_id = data["event_id"]
+
+    # make sure the user owns the event
+    cur.execute(
+        "SELECT * FROM events WHERE id = ? AND user_id = ?", (event_id, user_id)
+    )
+    output = cur.fetchone()
+    if output is None:
+        return {"message": "User does not own this event"}
+
+    cur.execute("DELETE FROM food WHERE id = ?", (food_id,))
+    db.commit()
+
+    return {"message": "Food deleted!"}
+
+
+@app.route("/owner_remove_rsvp_from_event", methods=["POST"])
+def owner_remove_rsvp_from_event():
+    user_id = get_current_user_id()
+    if user_id is None:
+        return {"message": "User not logged in"}
+    db = get_db()
+    cur = db.cursor()
+    data = request.get_json()
+
+    rsvp_id = data["rsvp_id"]
+    event_id = data["event_id"]
+
+    # make sure the user owns the event
+    cur.execute(
+        "SELECT * FROM events WHERE id = ? AND user_id = ?", (event_id, user_id)
+    )
+    output = cur.fetchone()
+    if output is None:
+        return {"message": "User does not own this event"}
+
+    cur.execute("DELETE FROM rsvps WHERE id = ?", (rsvp_id,))
+    db.commit()
+
+    return {"message": "RSVP deleted!"}

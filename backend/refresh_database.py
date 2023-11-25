@@ -7,6 +7,10 @@ if __name__ == "__main__":
     # drop all tables
     db.execute("DROP TABLE IF EXISTS Users")
     db.execute("DROP TABLE IF EXISTS Events")
+    db.execute("DROP TABLE IF EXISTS Recipe")
+    db.execute("DROP TABLE IF EXISTS Allergies")
+    db.execute("DROP TABLE IF EXISTS RSVPs")
+    db.execute("DROP TABLE IF EXISTS Food")
     db.commit()
 
     # open the "schema.sql" file
