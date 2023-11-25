@@ -331,3 +331,37 @@ def owner_remove_rsvp_from_event():
     db.commit()
 
     return {"message": "RSVP deleted!"}
+
+
+@app.route("/edit_event", methods=["POST"])
+def edit_event():
+    user_id = get_current_user_id()
+    if user_id is None:
+        return {"message": "User not logged in"}
+    db = get_db()
+    cur = db.cursor()
+    data = request.get_json()
+    event_id = data["event_id"]
+    event_name = data["event_name"]
+    event_date = data["event_date"]
+    event_time = data["event_time"]
+    # create a datetime object
+    event_datetime = datetime.datetime.strptime(
+        event_date + " " + event_time, "%Y-%m-%d %H:%M"
+    )
+
+    # make sure the user owns the event
+    cur.execute(
+        "SELECT * FROM events WHERE id = ? AND user_id = ?", (event_id, user_id)
+    )
+    output = cur.fetchone()
+    if output is None:
+        return {"message": "User does not own this event"}
+
+    cur.execute(
+        "UPDATE events SET event_name = ?, event_date = ? WHERE id = ?",
+        (event_name, event_datetime, event_id),
+    )
+
+    db.commit()
+    return {"message": "Event updated!"}
