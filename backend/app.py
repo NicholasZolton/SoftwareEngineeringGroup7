@@ -231,6 +231,23 @@ def rsvp_to_event():
     return {"message": "RSVP created!"}
 
 
+@app.route("/unrsvp_to_event", methods=["POST"])
+def unrsvp_to_event():
+    user_id = get_current_user_id()
+    if user_id is None:
+        return {"message": "User not logged in"}
+    db = get_db()
+    cur = db.cursor()
+    data = request.get_json()
+    event_id = data["event_id"]
+    cur.execute(
+        "DELETE FROM rsvps WHERE user_id = ? AND event_id = ?",
+        (user_id, event_id),
+    )
+    db.commit()
+    return {"message": "RSVP deleted!"}
+
+
 @app.route("/get_rsvps", methods=["GET"])
 def get_rsvps():
     db = get_db()
