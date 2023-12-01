@@ -48,5 +48,5 @@ CREATE TABLE Food (
 	food_name TEXT NOT NULL,
 	servings INTEGER NOT NULL,
 	FOREIGN KEY(event_id) REFERENCES Events(id),
-	FOREIGN KEY(rsvp_id) REFERENCES RSVPs(id),
+	FOREIGN KEY(rsvp_id) REFERENCES RSVPs(id)
 );

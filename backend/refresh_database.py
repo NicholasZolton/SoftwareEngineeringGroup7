@@ -14,7 +14,11 @@ if __name__ == "__main__":
     db.commit()
 
     # open the "schema.sql" file
-    with open("schema.sql") as f:
+    with open("./schema.sql") as f:
+        db.executescript(f.read())
+
+    # seed the database
+    with open("./seed.sql") as f:
         db.executescript(f.read())
 
     # close the database
