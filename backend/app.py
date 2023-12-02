@@ -33,7 +33,8 @@ def get_db():
         ):
             with app.open_resource("schema.sql") as f:
                 db.executescript(f.read().decode("utf8"))
-            # seed_database()
+            with app.open_resource("seed.sql") as f:
+                db.executescript(f.read().decode("utf8"))
     return db
 
 
@@ -44,7 +45,7 @@ def seed_database():
     cur.execute("SELECT * FROM users")
     output = cur.fetchall()
     if output == []:
-        with app.open_resource("seed_database.sql") as f:
+        with app.open_resource("seed.sql") as f:
             db.executescript(f.read().decode("utf8"))
 
 
@@ -63,9 +64,11 @@ def hello_world():
 
 @app.route("/create_user", methods=["POST"])
 def create_user():
+    print("create_user")
     db = get_db()
     cur = db.cursor()
     data = request.get_json()
+    print(data)
     username = data["username"]
     password = data["password"]
     email = data["email"]
@@ -103,6 +106,12 @@ def login_user():
     else:
         # if the user exists, pass them a token
         user_token = str(random.randint(0, 1000000))
+        # check if the user is already logged in
+        if email in logged_in_users.values():
+            # if they are, delete the old token
+            for key in logged_in_users.keys():
+                if logged_in_users[key] == email:
+                    return {"message": "User found", "token": key}
         logged_in_users[user_token] = email
         return {"message": "User found", "token": user_token}
 
@@ -148,14 +157,16 @@ def create_event():
     event_name = data["event_name"]
     event_date = data["event_date"]
     event_time = data["event_time"]
+    event_description = data["event_description"]
+    event_location = data["event_location"]
     # create a datetime object
     event_datetime = datetime.datetime.strptime(
         event_date + " " + event_time, "%Y-%m-%d %H:%M"
     )
 
     cur.execute(
-        "INSERT INTO events (event_name, event_date, user_id) VALUES (?, ?, ?)",
-        (event_name, event_datetime, user_id),
+        "INSERT INTO events (event_name, event_date, user_id, event_description, event_location) VALUES (?, ?, ?, ?, ?)",
+        (event_name, event_datetime, user_id, event_description, event_location),
     )
 
     db.commit()
@@ -266,10 +277,9 @@ def add_food():
     db = get_db()
     cur = db.cursor()
     data = request.get_json()
-    food_name = data["food_name"]
     food_event = data["event_id"]
-    food_servings = data["servings"]
     food_name = data["food_name"]
+    food_servings = data["servings"]
 
     # make sure there is a valid rsvp for this user and event
     cur.execute(
@@ -293,7 +303,13 @@ def get_foods_for_event():
     db = get_db()
     cur = db.cursor()
     event_id = request.args.get("event_id")
-    cur.execute("SELECT * FROM food WHERE event_id = ?", (event_id,))
+    cur.execute(
+        """SELECT food.event_id, food.rsvp_id, food.recipe_id, food.food_name, food.servings, users.id, users.email, food.id  FROM food
+INNER JOIN rsvps ON food.rsvp_id = rsvps.id
+INNER JOIN users ON rsvps.user_id = users.id
+WHERE food.event_id = ?""",
+        (event_id,),
+    )
     output = cur.fetchall()
     return {"foods": output}
 
@@ -362,6 +378,8 @@ def edit_event():
     event_name = data["event_name"]
     event_date = data["event_date"]
     event_time = data["event_time"]
+    event_description = data["event_description"]
+    event_location = data["event_location"]
     # create a datetime object
     event_datetime = datetime.datetime.strptime(
         event_date + " " + event_time, "%Y-%m-%d %H:%M"
@@ -376,9 +394,98 @@ def edit_event():
         return {"message": "User does not own this event"}
 
     cur.execute(
-        "UPDATE events SET event_name = ?, event_date = ? WHERE id = ?",
-        (event_name, event_datetime, event_id),
+        "UPDATE events SET event_name = ?, event_date = ?, event_description = ?, event_location = ? WHERE id = ?",
+        (event_name, event_datetime, event_description, event_location, event_id),
     )
 
     db.commit()
     return {"message": "Event updated!"}
+
+
+@app.route("/get_my_rsvps", methods=["GET"])
+def get_my_rsvps():
+    user_id = get_current_user_id()
+    if user_id is None:
+        return {"message": "User not logged in"}
+    db = get_db()
+    cur = db.cursor()
+    cur.execute("SELECT * FROM rsvps WHERE user_id = ?", (user_id,))
+    output = cur.fetchall()
+
+    # get a list of events from the rsvps
+    events = []
+    for rsvp in output:
+        cur.execute("SELECT * FROM events WHERE id = ?", (rsvp[2],))
+        events.append(cur.fetchone())
+
+    return {"events": events}
+
+
+@app.route("/check_if_rsvpd", methods=["GET"])
+def check_if_rsvpd():
+    user_id = get_current_user_id()
+    if user_id is None:
+        return {"message": "User not logged in"}
+    db = get_db()
+    cur = db.cursor()
+    event_id = request.args.get("id")
+    cur.execute(
+        "SELECT * FROM rsvps WHERE user_id = ? AND event_id = ?", (user_id, event_id)
+    )
+    output = cur.fetchone()
+    if output is None:
+        return {"rsvpd": False}
+    else:
+        return {"rsvpd": True}
+
+
+@app.route("/get_food", methods=["GET"])
+def get_food():
+    db = get_db()
+    cur = db.cursor()
+    food_id = request.args.get("food_id")
+    cur.execute("SELECT * FROM food WHERE id = ?", (food_id,))
+    output = cur.fetchone()
+    return {"food": output}
+
+
+@app.route("/edit_food", methods=["POST"])
+def edit_food():
+    user_id = get_current_user_id()
+    if user_id is None:
+        return {"message": "User not logged in"}
+    db = get_db()
+    cur = db.cursor()
+    data = request.get_json()
+    food_id = data["food_id"]
+    food_name = data["food_name"]
+    food_servings = data["servings"]
+
+    # make sure the user owns the food
+    cur.execute(
+        "SELECT * FROM food INNER JOIN rsvps ON food.rsvp_id = rsvps.id INNER JOIN users ON rsvps.user_id = users.id WHERE food.id = ? AND users.id = ?",
+        (food_id, user_id),
+    )
+    output = cur.fetchone()
+    if output is None:
+        return {"message": "User does not own this food"}
+
+    cur.execute(
+        "UPDATE food SET food_name = ?, servings = ? WHERE id = ?",
+        (food_name, food_servings, food_id),
+    )
+    db.commit()
+    return {"message": "Food updated!"}
+
+@app.route('/edit_email', methods=['POST'])
+def edit_email():
+    user_id = get_current_user_id()
+    if user_id is None:
+        return {'message': 'User not logged in'}
+    db = get_db()
+    cur = db.cursor()
+    data = request.get_json()
+    new_email = data['new_email']
+    cur.execute('UPDATE users SET email = ? WHERE id = ?', (new_email, user_id))
+    db.commit()
+    return {'message': 'Email updated!'}
