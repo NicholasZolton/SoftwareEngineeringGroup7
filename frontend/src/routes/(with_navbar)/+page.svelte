@@ -1,8 +1,8 @@
 <script lang='ts'>
 	import { goto } from "$app/navigation";
-	let username = "adalovelace";
-	let email = "adalovelace@example.com";
-	let password = "adalovelace";
+	let username = "george";
+	let email = "george@example.com";
+	let password = "george";
 	
 	async function signUp(event: any) {
 		event.preventDefault();
