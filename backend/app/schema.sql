@@ -1,0 +1,52 @@
+CREATE TABLE Users (
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	username TEXT NOT NULL UNIQUE,
+	password TEXT NOT NULL,
+	email TEXT NOT NULL UNIQUE
+);
+
+CREATE TABLE Events (
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	event_name TEXT NOT NULL,
+	event_date DATETIME NOT NULL,
+	event_description TEXT NOT NULL,
+	event_location TEXT NOT NULL,
+	user_id INTEGER NOT NULL,
+	FOREIGN KEY(user_id) REFERENCES Users(id)
+);
+
+CREATE TABLE Recipe (
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	recipe_name TEXT NOT NULL,
+	recipe_description TEXT NOT NULL,
+	recipe_instructions TEXT NOT NULL,
+	recipe_minutes INTEGER NOT NULL,
+	user_id INTEGER NOT NULL,
+	FOREIGN KEY(user_id) REFERENCES Users(id)
+);
+
+CREATE TABLE Allergies (
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	allergy_name TEXT NOT NULL,
+	user_id INTEGER NOT NULL,
+	FOREIGN KEY(user_id) REFERENCES Users(id)
+);
+
+CREATE TABLE RSVPs (
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	user_id INTEGER NOT NULL,
+	event_id INTEGER NOT NULL,
+	FOREIGN KEY(user_id) REFERENCES Users(id),
+	FOREIGN KEY(event_id) REFERENCES Events(id)
+);
+
+CREATE TABLE Food (
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	event_id INTEGER NOT NULL,
+	rsvp_id INTEGER NOT NULL,
+	recipe_id INTEGER,
+	food_name TEXT NOT NULL,
+	servings INTEGER NOT NULL,
+	FOREIGN KEY(event_id) REFERENCES Events(id),
+	FOREIGN KEY(rsvp_id) REFERENCES RSVPs(id)
+);
