@@ -72,11 +72,14 @@ def create_user():
     username = data["username"]
     password = data["password"]
     email = data["email"]
-    cur.execute(
-        "INSERT INTO users (username, password, email) VALUES (?, ?, ?)",
-        (username, password, email),
-    )
-    db.commit()
+    try:
+        cur.execute(
+            "INSERT INTO users (username, password, email) VALUES (?, ?, ?)",
+            (username, password, email),
+        )
+        db.commit()
+    except Exception as e:
+        return {"message": "Invalid username or email"}
     return {"message": "User created!"}
 
 
@@ -477,15 +480,30 @@ def edit_food():
     db.commit()
     return {"message": "Food updated!"}
 
-@app.route('/edit_email', methods=['POST'])
-def edit_email():
+
+@app.route("/delete_event", methods=["POST"])
+def delete_event():
     user_id = get_current_user_id()
     if user_id is None:
-        return {'message': 'User not logged in'}
+        return {"message": "User not logged in"}
     db = get_db()
     cur = db.cursor()
     data = request.get_json()
-    new_email = data['new_email']
-    cur.execute('UPDATE users SET email = ? WHERE id = ?', (new_email, user_id))
+    event_id = data["event_id"]
+    cur.execute("DELETE FROM events WHERE id = ? AND user_id = ?", (event_id, user_id))
     db.commit()
-    return {'message': 'Email updated!'}
+    return {"message": "Event deleted!"}
+
+
+@app.route("/delete_food", methods=["POST"])
+def delete_food():
+    user_id = get_current_user_id()
+    if user_id is None:
+        return {"message": "User not logged in"}
+    db = get_db()
+    cur = db.cursor()
+    data = request.get_json()
+    food_id = data["food_id"]
+    cur.execute("DELETE FROM food WHERE id = ?", (food_id,))
+    db.commit()
+    return {"message": "Food deleted!"}

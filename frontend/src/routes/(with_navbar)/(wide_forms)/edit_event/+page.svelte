@@ -8,6 +8,34 @@
 	let event_time = "17:30";
 	let event_description = "A Thanksgiving for friends!";
 	let event_location = "1234 Main St, Dallas, TX 75080";
+	
+	async function deleteEvent() {
+		// get the event_id from the url
+		const urlParams = new URLSearchParams(window.location.search);
+		const event_id = urlParams.get('id');
+
+		// do the API call to login user, if it returns a token, then set the user	
+		let requestBody = {
+			"event_id": event_id,
+		};
+		const options: any = {
+			method: 'POST',
+			headers: {'User-Agent': 'insomnia/2023.5.8', 'no-cors': true, token: $user.toString(), 'Content-Type': 'application/json'},
+			body: JSON.stringify(requestBody)
+		};
+		console.log(requestBody)
+		
+		let response: any = await fetch('http://127.0.0.1:5000/delete_event', options)	
+		// console.log(await response.text());
+		response = await response.json();
+		console.log(response);
+
+		if (response['message'] === 'Event deleted!') {
+			goto('/dashboard');
+		} else {
+			alert('There was an error deleting the event. Please try again.');
+		}
+	}
 
 	async function getEventInfo() {
 		// get the event_id from the url
@@ -103,11 +131,24 @@
 
 		<div id="button-container">
 			<button on:click={editEvent}>Update Event!</button>	
+			<button on:click={deleteEvent}>Delete Event!</button>	
 		</div>
 	{/if}
 </main>
 
 <style>
+	#button-container button {
+		width: 15%;
+	}
+
+	#button-container {
+		display: flex;
+		flex-direction: row;
+		justify-content: space-around;
+		align-items: center;
+		width: 100%;
+	}
+
 	#input-section h4 {
 		margin: 0;
 	}

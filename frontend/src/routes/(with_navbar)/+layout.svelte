@@ -41,16 +41,26 @@
 		align-items: center;
 		box-shadow: 0 0 10px rgba(0, 0, 0, 0.25);
 		font-size: 1.5rem;
+		background: #ffa800;
 	}
 
 	grad-text {
 		color: #7bbde3;
-		background-image: -webkit-linear-gradient(120deg, #7bbde3 0%, #1b4965 100%);
+		background-image: -webkit-linear-gradient(120deg, var(--primary) 0%, #65521b 100%);
 		background-clip: text;
 		-webkit-background-clip: text;
 		text-fill-color: transparent;
 		-webkit-text-fill-color: transparent;
 		font-weight: 800;
 		font-size: 2rem;
+	}
+
+
+	[data-theme="light"],
+	:root:not([data-theme="dark"]) {
+	--primary: #ff4c04;
+	--primary-hover: #e74100;
+	--primary-focus: rgba(216, 27, 96, 0.125);
+	--primary-inverse: #FFF;
 	}
 </style>
