@@ -10,13 +10,12 @@
 </html>
 
 <style>
-
 [data-theme="light"],
 :root:not([data-theme="dark"]) {
-  --primary: #d81b60;
-  --primary-hover: #c2185b;
-  --primary-focus: rgba(216, 27, 96, 0.125);
-  --primary-inverse: #FFF;
+	--primary: #ff4c04;
+	--primary-hover: #e74100;
+	--primary-focus: rgba(216, 27, 96, 0.125);
+	--primary-inverse: #FFF;
 }
 
 </style>
