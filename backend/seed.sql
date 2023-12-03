@@ -1,12 +1,12 @@
 INSERT INTO Users (username, password, email) 
 VALUES 
 		('admin', 'admin', 'admin@example.com'),
-		('user', 'user', 'user@example.com'),
+		('adalovelace', 'adalovelace', 'adalovelace@example.com'),
 		('user2', 'user2', 'user2@example.com');
 		
 INSERT INTO Events (event_name, event_date, event_description, event_location, user_id)
 VALUES
-		('Friendsgiving', '12/1/2023', 'A Thanksgiving for friends!', '2800 Waterview Pkwy', 1);
+		('Friendsgiving', '2023-12-09 15:00:00', 'A Thanksgiving for friends!', '2800 Waterview Pkwy', 1);
 		
 INSERT INTO RSVPs (user_id, event_id)
 VALUES
